@@ -33,22 +33,30 @@ for directory in [DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DIR, CHECKP
 # =======================
 
 # Wake County API Configuration
+# ArcGIS FeatureServer REST API for property parcels
 WAKE_COUNTY_API = {
-    "base_url": "https://services.wake.gov/realestate/api/",
-    "endpoint": "properties",
+    "base_url": "https://maps.wakegov.com/arcgis/rest/services/Property/Parcels/FeatureServer/0",
+    "endpoint": "query",
     "max_records": 1000,
     "timeout": 30,  # seconds
     "retry_attempts": 3,
     "retry_delay": 5,  # seconds
+    "query_params": {
+        "where": "1=1",  # Query all records
+        "outFields": "*",  # All fields
+        "f": "json",  # JSON format
+        "returnGeometry": "false",  # No geometry needed
+    }
 }
 
 # Orange County Web Scraping Configuration
 ORANGE_COUNTY_SCRAPER = {
-    "base_url": "https://www.orangecountync.gov/departments/tax_assessor/property_search.php",
+    "base_url": "https://orange.propertytaxpayments.net/search",
     "max_records": 300,
     "timeout": 30,  # seconds
     "headless": True,
     "browser": "chromium",  # chromium, firefox, or webkit
+    "search_type": "owner_name",  # Default search type
 }
 
 # =======================

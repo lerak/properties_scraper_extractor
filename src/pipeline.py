@@ -34,7 +34,8 @@ class PropertyPipeline:
         self,
         enable_api: bool = True,
         enable_scraping: bool = True,
-        enable_checkpoints: bool = True
+        enable_checkpoints: bool = True,
+        use_test_data: bool = False
     ):
         """
         Initialize the pipeline.
@@ -43,6 +44,7 @@ class PropertyPipeline:
             enable_api: Whether to fetch from Wake County API
             enable_scraping: Whether to scrape Orange County data
             enable_checkpoints: Whether to save checkpoints
+            use_test_data: Whether to use generated test data instead of real sources
         """
         # Setup logging
         setup_logging()
@@ -52,6 +54,7 @@ class PropertyPipeline:
         self.enable_api = enable_api
         self.enable_scraping = enable_scraping and ENV_CONFIG.get("ENABLE_SCRAPING", True)
         self.enable_checkpoints = enable_checkpoints and PIPELINE_CONFIG["enable_checkpoints"]
+        self.use_test_data = use_test_data
 
         # Initialize components
         self.validator = PropertyValidator()
@@ -143,6 +146,79 @@ class PropertyPipeline:
                     "statistics": self.statistics,
                 }
 
+    def _generate_test_data(
+        self,
+        api_limit: Optional[int],
+        scraper_limit: Optional[int]
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Generate test data for pipeline testing."""
+        self.logger.info("Generating test data...")
+
+        wake_count = api_limit or 10
+        orange_count = scraper_limit or 5
+
+        wake_records = []
+        for i in range(wake_count):
+            wake_records.append({
+                "owner_name": f"John Smith {i}",
+                "parcel_id": f"WK-{1000 + i}",
+                "property_address": f"{100 + i} Main St",
+                "city": "Raleigh",
+                "state": "NC",
+                "zip_code": "27601",
+                "county": "Wake",
+                "mailing_address": f"{100 + i} Main St, Raleigh NC 27601",
+                "assessed_value": 250000 + (i * 10000),
+                "sale_date": "2024-01-15",
+                "sale_price": 280000 + (i * 10000),
+                "source": "Wake County API (TEST)",
+                "source_url": "https://test.example.com",
+                "extracted_at": datetime.now().isoformat(),
+            })
+
+        orange_records = []
+        for i in range(orange_count):
+            # Create some duplicates for testing
+            if i < 2:
+                # Duplicate with slight variations
+                orange_records.append({
+                    "owner_name": f"John Smith {i}",
+                    "parcel_id": f"WK-{1000 + i}",
+                    "property_address": f"{100 + i} Main Street",
+                    "city": "Raleigh",
+                    "state": "NC",
+                    "zip_code": "27601",
+                    "county": "Orange",
+                    "mailing_address": "",
+                    "assessed_value": 255000 + (i * 10000),
+                    "sale_date": "",
+                    "sale_price": "",
+                    "source": "Orange County Scraper (TEST)",
+                    "source_url": "https://test.example.com",
+                    "extracted_at": datetime.now().isoformat(),
+                })
+            else:
+                # Unique Orange County records
+                orange_records.append({
+                    "owner_name": f"Jane Doe {i}",
+                    "parcel_id": f"OR-{2000 + i}",
+                    "property_address": f"{200 + i} Chapel Hill Rd",
+                    "city": "Chapel Hill",
+                    "state": "NC",
+                    "zip_code": "27514",
+                    "county": "Orange",
+                    "mailing_address": f"{200 + i} Chapel Hill Rd, Chapel Hill NC 27514",
+                    "assessed_value": 300000 + (i * 15000),
+                    "sale_date": "2024-02-20",
+                    "sale_price": 320000 + (i * 15000),
+                    "source": "Orange County Scraper (TEST)",
+                    "source_url": "https://test.example.com",
+                    "extracted_at": datetime.now().isoformat(),
+                })
+
+        self.logger.info(f"Generated {len(wake_records)} Wake + {len(orange_records)} Orange test records")
+        return wake_records, orange_records
+
     def _stage_fetch_data(
         self,
         api_limit: Optional[int],
@@ -165,6 +241,10 @@ class PropertyPipeline:
         wake_records = []
         orange_records = []
 
+        # Use test data if enabled
+        if self.use_test_data:
+            return self._generate_test_data(api_limit, scraper_limit)
+
         # Fetch from Wake County API
         if self.enable_api:
             try:
@@ -185,7 +265,6 @@ class PropertyPipeline:
         if self.enable_scraping:
             try:
                 with OrangeCountyScraper() as scraper:
-                    scraper.start()
                     orange_records = scraper.scrape_and_normalize(max_records=scraper_limit)
                     scraper.save_raw_data(orange_records)
 

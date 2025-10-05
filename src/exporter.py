@@ -314,8 +314,14 @@ class PropertyExporter:
             # Section values
             if isinstance(values, dict):
                 for key, value in values.items():
+                    # Convert nested dicts/lists to string
+                    if isinstance(value, (dict, list)):
+                        value = str(value)
                     ws.append([f"  {key.replace('_', ' ').title()}", value])
             else:
+                # Convert nested dicts/lists to string
+                if isinstance(values, (dict, list)):
+                    values = str(values)
                 ws.append(["  Value", values])
 
             ws.append([])

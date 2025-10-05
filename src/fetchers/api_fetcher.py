@@ -25,6 +25,7 @@ class WakeCountyAPIFetcher:
     def __init__(self):
         """Initialize the API fetcher."""
         self.logger = get_logger(__name__)
+        self.config = WAKE_COUNTY_API
         self.base_url = WAKE_COUNTY_API["base_url"]
         self.endpoint = WAKE_COUNTY_API["endpoint"]
         self.max_records = WAKE_COUNTY_API["max_records"]
@@ -127,12 +128,12 @@ class WakeCountyAPIFetcher:
         filters: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Fetch property records from Wake County API.
+        Fetch property records from Wake County ArcGIS API.
 
         Args:
             limit: Maximum number of records to fetch (default: max_records from config)
             offset: Number of records to skip
-            filters: Optional filters to apply (e.g., {"city": "Raleigh"})
+            filters: Optional filters to apply (e.g., {"CITY": "RALEIGH"})
 
         Returns:
             List of property records
@@ -143,20 +144,24 @@ class WakeCountyAPIFetcher:
                 limit = self.max_records
 
             # Build request URL
-            url = f"{self.base_url}{self.endpoint}"
+            url = f"{self.base_url}/{self.endpoint}"
 
-            # Build query parameters
-            params = {
-                "$limit": min(limit, self.max_records),
-                "$offset": offset,
-            }
+            # Build query parameters for ArcGIS
+            params = self.config.get("query_params", {}).copy()
+
+            # Set result count and offset
+            params["resultRecordCount"] = min(limit, 2000)  # ArcGIS max is 2000
+            params["resultOffset"] = offset
 
             # Add filters if provided
             if filters:
+                # Build WHERE clause for ArcGIS
+                where_clauses = [params.get("where", "1=1")]
                 for key, value in filters.items():
-                    params[key] = value
+                    where_clauses.append(f"{key}='{value}'")
+                params["where"] = " AND ".join(where_clauses)
 
-            self.logger.info(f"Fetching up to {limit} records from Wake County API...")
+            self.logger.info(f"Fetching up to {limit} records from Wake County ArcGIS API...")
 
             # Make request
             data = self._make_request(url, params)
@@ -165,7 +170,7 @@ class WakeCountyAPIFetcher:
                 self.logger.error("Failed to fetch data from API")
                 return []
 
-            # Extract records (API response structure may vary)
+            # Extract records (ArcGIS format)
             records = self._extract_records(data)
 
             # Apply rate limiting
@@ -180,7 +185,7 @@ class WakeCountyAPIFetcher:
 
     def _extract_records(self, data: Any) -> List[Dict[str, Any]]:
         """
-        Extract property records from API response.
+        Extract property records from ArcGIS API response.
 
         Args:
             data: API response data
@@ -188,17 +193,18 @@ class WakeCountyAPIFetcher:
         Returns:
             List of property records
         """
-        # Handle different response structures
-        if isinstance(data, list):
-            records = data
-        elif isinstance(data, dict):
-            # Common patterns: {"results": [...]} or {"data": [...]}
-            records = data.get("results", data.get("data", []))
+        # ArcGIS returns: {"features": [{"attributes": {...}}, ...]}
+        if isinstance(data, dict):
+            features = data.get("features", [])
+            # Extract attributes from each feature
+            records = [feature.get("attributes", {}) for feature in features if "attributes" in feature]
+            return records
+        elif isinstance(data, list):
+            # Fallback for list format
+            return data
         else:
             self.logger.warning(f"Unexpected response format: {type(data)}")
-            records = []
-
-        return records
+            return []
 
     def fetch_and_normalize(
         self,
@@ -244,24 +250,23 @@ class WakeCountyAPIFetcher:
             Normalized record or None if invalid
         """
         try:
-            # Map API fields to standard schema
-            # Note: Field names may need adjustment based on actual API response
+            # Map ArcGIS fields to standard schema
+            # Based on Wake County ArcGIS FeatureServer fields
             normalized = {
-                "owner_name": record.get("owner_name", ""),
-                "parcel_id": record.get("parcel_id", record.get("pin", "")),
-                "property_address": record.get("property_address", record.get("site_address", "")),
-                "mailing_address": record.get("mailing_address", ""),
-                "city": record.get("city", record.get("property_city", "")),
-                "state": record.get("state", record.get("property_state", "NC")),
-                "zip_code": record.get("zip_code", record.get("property_zip", "")),
+                "owner_name": record.get("OWNER", ""),
+                "parcel_id": record.get("PIN_NUM", record.get("REID", "")),
+                "property_address": record.get("SITE_ADDRESS", ""),
+                "mailing_address": "",  # Not available in this dataset
+                "city": record.get("CITY", ""),
+                "state": "NC",
+                "zip_code": str(record.get("ZIPNUM", "")) if record.get("ZIPNUM") else "",
                 "county": "Wake",
-                "assessed_value": record.get("assessed_value", record.get("total_value", None)),
-                "sale_date": record.get("sale_date", record.get("last_sale_date", "")),
-                "sale_price": record.get("sale_price", record.get("last_sale_price", None)),
+                "assessed_value": record.get("TOTAL_VALUE_ASSD", None),
+                "sale_date": record.get("SALE_DATE", ""),
+                "sale_price": record.get("TOTSALPRICE", None),
                 "source": "Wake County API",
-                "source_url": f"{self.base_url}{self.endpoint}",
+                "source_url": f"{self.base_url}/{self.endpoint}",
                 "extracted_at": datetime.now().isoformat(),
-                "raw_data": record,  # Preserve original data
             }
 
             return normalized

@@ -62,6 +62,12 @@ from src.utils import setup_logging, get_logger
     is_flag=True,
     help="Show version and exit"
 )
+@click.option(
+    "--test-data",
+    is_flag=True,
+    default=False,
+    help="Use generated test data instead of real sources"
+)
 def main(
     api_limit,
     scraper_limit,
@@ -70,7 +76,8 @@ def main(
     output_format,
     no_checkpoints,
     log_level,
-    version
+    version,
+    test_data
 ):
     """
     Property Owner Extraction & Deduplication Pipeline
@@ -109,17 +116,22 @@ def main(
     click.echo()
 
     # Validate options
-    if no_api and no_scraping:
-        logger.error("Cannot disable both API and scraping")
-        click.echo("Error: Cannot disable both --no-api and --no-scraping", err=True)
+    if no_api and no_scraping and not test_data:
+        logger.error("Cannot disable both API and scraping without test data")
+        click.echo("Error: Cannot disable both --no-api and --no-scraping (use --test-data for testing)", err=True)
         sys.exit(1)
 
     # Display configuration
     click.echo("Configuration:")
-    api_status = "Disabled" if no_api else f"Enabled (limit: {api_limit or 'default'})"
-    click.echo(f"  Wake County API: {api_status}")
-    scraper_status = "Disabled" if no_scraping else f"Enabled (limit: {scraper_limit or 'default'})"
-    click.echo(f"  Orange County Scraping: {scraper_status}")
+    if test_data:
+        click.echo("  Mode: TEST DATA")
+        click.echo(f"  Wake Test Records: {api_limit or 10}")
+        click.echo(f"  Orange Test Records: {scraper_limit or 5}")
+    else:
+        api_status = "Disabled" if no_api else f"Enabled (limit: {api_limit or 'default'})"
+        click.echo(f"  Wake County API: {api_status}")
+        scraper_status = "Disabled" if no_scraping else f"Enabled (limit: {scraper_limit or 'default'})"
+        click.echo(f"  Orange County Scraping: {scraper_status}")
     click.echo(f"  Output Format: {output_format.upper()}")
     click.echo(f"  Checkpoints: {'Disabled' if no_checkpoints else 'Enabled'}")
     click.echo(f"  Log Level: {log_level}")
@@ -131,7 +143,8 @@ def main(
         pipeline = PropertyPipeline(
             enable_api=not no_api,
             enable_scraping=not no_scraping,
-            enable_checkpoints=not no_checkpoints
+            enable_checkpoints=not no_checkpoints,
+            use_test_data=test_data
         )
 
         # Run pipeline

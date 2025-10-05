@@ -12,11 +12,11 @@ from the Orange County Tax Assessor website.
 ORANGE_COUNTY_SELECTORS = {
     # Search Form Selectors
     "search_form": {
-        "owner_name_input": 'input[name="owner_name"]',
-        "parcel_id_input": 'input[name="parcel_id"]',
-        "address_input": 'input[name="address"]',
-        "search_button": 'button[type="submit"]',
-        "submit_button": 'input[type="submit"][value="Search"]',
+        "owner_name_input": 'input[name="Query.OwnerName"]',
+        "parcel_id_input": 'input[name="Query.AccountNumber"]',
+        "address_input": 'input[name="Query.PropertyLocation"]',
+        "search_button": '#btn-search-submit',
+        "submit_button": 'button[type="submit"]',
     },
 
     # Search Results Table
