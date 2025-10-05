@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Project-specific: Data Files
+data/raw/*
+data/processed/*
+data/output/*
+data/checkpoints/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/output/.gitkeep
+!data/checkpoints/.gitkeep
+
+# Project-specific: Logs
+logs/*
+*.log
+!logs/.gitkeep
+
+# Project-specific: Environment
+.env
+.env.local
+
+# Project-specific: Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Playwright browsers
+.playwright/
+
+# OS
+Thumbs.db
+.DS_Store
