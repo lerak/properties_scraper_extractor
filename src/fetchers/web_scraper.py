@@ -8,15 +8,21 @@ and error handling.
 
 import time
 import asyncio
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, TYPE_CHECKING
 from datetime import datetime
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Browser, Page, BrowserContext
 
 try:
     from playwright.sync_api import sync_playwright, Browser, Page, BrowserContext, Error
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
+    Browser = None  # type: ignore
+    Page = None  # type: ignore
+    BrowserContext = None  # type: ignore
 
 from config.settings import (
     ORANGE_COUNTY_SCRAPER,

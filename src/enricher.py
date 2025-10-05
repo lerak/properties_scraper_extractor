@@ -5,7 +5,7 @@ This module adds quality scores and metadata to property records
 as specified in FR-6.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from config.settings import QUALITY_SCORE_WEIGHTS, QUALITY_THRESHOLDS

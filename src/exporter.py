@@ -5,9 +5,12 @@ This module generates formatted Excel workbooks with multiple sheets
 as specified in FR-7.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TYPE_CHECKING
 from pathlib import Path
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from openpyxl import Workbook
 
 try:
     from openpyxl import Workbook
@@ -17,6 +20,7 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
+    Workbook = None  # type: ignore
 
 from config.settings import EXCEL_CONFIG, OUTPUT_DIR
 from src.utils import get_logger

@@ -116,8 +116,10 @@ def main(
 
     # Display configuration
     click.echo("Configuration:")
-    click.echo(f"  Wake County API: {'Disabled' if no_api else f'Enabled (limit: {api_limit or \"default\"})'}")
-    click.echo(f"  Orange County Scraping: {'Disabled' if no_scraping else f'Enabled (limit: {scraper_limit or \"default\"})'}")
+    api_status = "Disabled" if no_api else f"Enabled (limit: {api_limit or 'default'})"
+    click.echo(f"  Wake County API: {api_status}")
+    scraper_status = "Disabled" if no_scraping else f"Enabled (limit: {scraper_limit or 'default'})"
+    click.echo(f"  Orange County Scraping: {scraper_status}")
     click.echo(f"  Output Format: {output_format.upper()}")
     click.echo(f"  Checkpoints: {'Disabled' if no_checkpoints else 'Enabled'}")
     click.echo(f"  Log Level: {log_level}")
